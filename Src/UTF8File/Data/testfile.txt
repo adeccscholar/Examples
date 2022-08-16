@@ -1,0 +1,61 @@
+A vector as general datatype is a part of the first STL implementation. 
+I think it was in 1994. It was part of early Borland C++ Compilers in 1995 / 1996 also. 
+Its official part of the 1st ISO C++ Standard since 1998. 
+This article show "deep" knowledge of C++ (irony off), vectors are not modern, they are part of classic C++. 
+And they don't resize with each new element, implementations are different but reallocations should only 
+happen at logarithmically growing intervals of size. 
+
+The Borland C++ Compiler in 1996 had a really good Book which discribed the STL and with this vectors. 
+Its important to understand containers, iterators and algorithms. A vector is far away from a dynamic array 
+in other languages, self if its defined as dynamic allocated memory with contiguous storage locations for 
+their elements (mostly).
+
+
+
+Dieses ist eine Beispieldatei für UTF-8 Codierung.
+Skandinavien
+ÅåÄäÖöÆæØø
+Griechische Symbole
+ͰͱͲͳʹ͵Ͷͷͺͻ;Ϳ΄΅Ά·ΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫ 
+άέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗ
+ϘϙϚϛϜϝϞϟϠϡ
+ϰϱϲϳϴϵ϶ϷϸϹϺϻϼϽϾϿ
+ϢϣϤϥϦϧϨϩϪϫϬϭϮϯ
+
+➀➁➂➃➄➅➆➇➈➉
+✈♣✫彡™€©®☤☦Ϯ⦿◎☺☻♻✂✚☫↔➜★━⊰ღψ♡✇♛｡◕‿❤❥♥☮☯☸☼✪✿❧❖❈
+✿✾❀❁
+♀♂ ✆✉✎✍✒ ☎☏ ⚠☢☣
+Symbole für Sonne und Planeten
+☼♁☿♃♄♅♆♇
+Symbole für die Sternzeichen
+♈♉♊♋♌♍♎♏♐♑♒♓
+Symbole für Schachfiguren
+♔♕♖♗♘♙♚♛♜♝♞♟
+Symbole für Spielkarten
+♣♠♥♦
+Symbole für Würfelsymbole (Probleme beim Anzeigen in Notepad++)
+⚀⚁⚂⚃⚄⚅
+◄ ► ▲ ▼ 
+∞✗→➛➝➡➩➫➭➦➤➰
+♭♮♯♩♫♬♪
+
+Beispiel Japanisch
+新宿」までどの位かかりますか？
+
+Beispiel chinesisch
+几点了?现在三点了
+你作什麼(么)工作 ?  我是工程 師(师)
+
+Beispiel für Hindi
+आप कैसे हैं 
+मैं ठीक हुँ । 
+आपसे मिलकर खुशी हुई ।
+
+Beispiel Hebräisch
+סליחה, מה השעה?
+
+Beispiel Farsi
+نوبت یا وقت مالقات را به تعویق انداخنت/به آینده موکول کردن
+
+Ende der Datei erreicht!
