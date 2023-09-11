@@ -12,9 +12,11 @@ using namespace std::string_literals;
 
 enum class MyDistanceKind : int { without, meter, kilometer, miles, yards, foot, inchs };
 
-template<typename T>
+template<typename ty>
 inline constexpr bool always_false_distance = false;
 
+template <typename ty>
+concept my_param_distance = std::is_floating_point_v<ty> || (std::is_integral_v<ty> && !std::is_same_v<ty, bool>);
 
 template <std::floating_point ty = double, MyDistanceKind kind = MyDistanceKind::without>
 class MyDistance {
@@ -25,58 +27,60 @@ class MyDistance {
 public:
    constexpr MyDistance(void) = default;
 
-   template <typename OtherTy>
-      requires std::is_floating_point_v<OtherTy> || (std::is_integral_v<OtherTy> && !std::is_same_v<OtherTy, bool>)
-   constexpr MyDistance(OtherTy const& val) : flDistance(static_cast<ty>(val)) {}
+   template <my_param_distance OtherTy>
+   constexpr MyDistance(OtherTy const& val) : theDistance(static_cast<ty>(val)) {}
 
    constexpr MyDistance(MyDistance const& other) {
-      flDistance = other.flDistance;
+      theDistance = other.theDistance;
       }
 
-   template <MyDistanceKind other_kind, std::floating_point OtherTy = ty>
+   template <MyDistanceKind other_kind, my_param_distance OtherTy = ty>
    constexpr MyDistance(MyDistance<OtherTy, other_kind> const& other) {
-      flDistance = other.convert_to<kind>();
+      theDistance = other.convert_to<kind>();
       }
 
 
-   template <MyDistanceKind other_kind, std::floating_point OtherTy = ty>
+   template <MyDistanceKind other_kind, my_param_distance OtherTy = ty>
    MyDistance& operator = (MyDistance<OtherTy, other_kind> const& other) {
-      flDistance = other.convert_to<kind>();
+      theDistance = other.convert_to<kind, ty>();
       return *this;
       }
 
    MyDistance(MyDistance&&) noexcept = default;
 
-   template <MyDistanceKind other_kind, std::floating_point OtherTy = ty>
-   operator MyDistance<OtherTy, other_kind> () const {
-      MyDistance<OtherTy, other_kind> val;
-      val.convert_from<ty>(flDistance);
-      return val;
+   template <my_param_distance OtherTy, MyDistanceKind other_kind>
+   operator MyDistance<OtherTy, other_kind> ()  {
+      return MyDistance<OtherTy, other_kind>(*this);
       }
 
    auto operator <=> (MyDistance const& other) const {
-      static const double epsilon = 1e-6; // Toleranz für Rundungsdifferenzen
-      if (std::fabs(flDistance - other.flDistance) < epsilon) return std::strong_ordering::equal;
-      else if (flDistance < other.flDistance) return std::strong_ordering::less;
-           else return std::strong_ordering::greater;
+      if constexpr (std::is_floating_point_v<ty> == true) {
+         static const double epsilon = 1e-6; // Toleranz für Rundungsdifferenzen
+         if (std::fabs(theDistance - other.theDistance) < epsilon) return std::strong_ordering::equal;
+         else if (theDistance < other.theDistance) return std::strong_ordering::less;
+              else return std::strong_ordering::greater;
+         }
+      else {
+         return theDistance <=> other.theDistance;
+         }
       }
 
-   template <MyDistanceKind other_kind, std::floating_point OtherTy = ty>
+   template <MyDistanceKind other_kind, my_param_distance OtherTy = ty>
    bool operator== (const MyDistance<OtherTy, other_kind>& other) const {
       MyDistance<ty, kind> compare_value(other);
       return (*this <=> compare_value) == 0;
       }
 
-   constexpr ty const& Distance(void) const { return flDistance;  }
-   void Distance(ty const& val) { flDistance = val;  }
+   constexpr ty const& Distance(void) const { return theDistance;  }
+   void Distance(ty const& val) { theDistance = val;  }
 
    operator std::string () const {
-      if constexpr (kind == MyDistanceKind::meter)          return std::format("{} m", flDistance);
-      else if constexpr (kind == MyDistanceKind::kilometer) return std::format("{} km", flDistance);
-      else if constexpr (kind == MyDistanceKind::miles)     return std::format("{} mi", flDistance);
-      else if constexpr (kind == MyDistanceKind::yards)     return std::format("{} yd", flDistance);
-      else if constexpr (kind == MyDistanceKind::foot)      return std::format("{} ft", flDistance);
-      else if constexpr (kind == MyDistanceKind::inchs)     return std::format("{} in", flDistance);
+      if constexpr (kind == MyDistanceKind::meter)          return std::format("{} m", theDistance);
+      else if constexpr (kind == MyDistanceKind::kilometer) return std::format("{} km", theDistance);
+      else if constexpr (kind == MyDistanceKind::miles)     return std::format("{} mi", theDistance);
+      else if constexpr (kind == MyDistanceKind::yards)     return std::format("{} yd", theDistance);
+      else if constexpr (kind == MyDistanceKind::foot)      return std::format("{} ft", theDistance);
+      else if constexpr (kind == MyDistanceKind::inchs)     return std::format("{} in", theDistance);
       else {
          static_assert(always_false_distance<kind>, "unexpected unit for distance");
          }
@@ -97,7 +101,7 @@ public:
    template<MyDistanceKind other_kind>
    void constexpr convert_from(ty const& val) {
       if constexpr (kind == other_kind) {
-         flDistance = val;
+         theDistance = val;
          }
       else if constexpr (kind == MyDistanceKind::without || other_kind == MyDistanceKind::without) {
          static_assert(always_false_distance<kind>, "a distance without unit can't converted to or from a distance with unit");
@@ -105,19 +109,19 @@ public:
       else {
          if constexpr (kind == MyDistanceKind::meter) {
             if constexpr (other_kind == MyDistanceKind::kilometer) {
-               flDistance = val * 1000.0;
+               theDistance = set_value<ty>(val * 1000);
                }
             else if constexpr (other_kind == MyDistanceKind::miles) {
-               flDistance = val * 1609.34;
+               theDistance = set_value<ty>(val * 1609.34);
                }
             else if constexpr (other_kind == MyDistanceKind::yards) {
-               flDistance = val * 0.9144;
+               theDistance = set_value<ty>(val * 0.9144);
                }
             else if constexpr (other_kind == MyDistanceKind::foot) {
-               flDistance = val * 0.3048;
+               theDistance = set_value<ty>(val * 0.3048);
                }
             else if constexpr (other_kind == MyDistanceKind::inchs) {
-               flDistance = val * 0.0254;
+               theDistance = set_value<ty>(val * 0.0254);
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -125,19 +129,19 @@ public:
             }
          else if constexpr (kind == MyDistanceKind::kilometer) {
             if constexpr (other_kind == MyDistanceKind::meter) {
-               flDistance = val / 1000.0;
+               theDistance = set_value<ty>(val / 1000);
                }
             else if constexpr (other_kind == MyDistanceKind::miles) {
-               flDistance = val * 1.60934;
+               theDistance = set_value<ty>(val * 1.60934);
                }
             else if constexpr (other_kind == MyDistanceKind::yards) {
-               flDistance = val * 0.0009144;
+               theDistance = set_value<ty>(val * 0.0009144);
                }
             else if constexpr (other_kind == MyDistanceKind::foot) {
-               flDistance = val * 0.0003048;
+               theDistance = set_value<ty>(val * 0.0003048);
                }
             else if constexpr (other_kind == MyDistanceKind::inchs) {
-               flDistance = val * 0.0000254;
+               theDistance = set_value<ty>(val * 0.0000254);
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -145,19 +149,19 @@ public:
             }
          else if constexpr (kind == MyDistanceKind::miles) {
             if constexpr (other_kind == MyDistanceKind::meter) {
-               flDistance = val * 0.000621371;
+               theDistance = set_value<ty>(val * 0.000621371);
                }
             else if constexpr (other_kind == MyDistanceKind::kilometer) {
-               flDistance = val * 0.621371;
+               theDistance = set_value<ty>(val * 0.621371);
                }
             else if constexpr (other_kind == MyDistanceKind::yards) {
-               flDistance = val * 0.000568182;
+               theDistance = set_value<ty>(val / 1760);
                }
             else if constexpr (other_kind == MyDistanceKind::foot) {
-               flDistance = val * 0.000189394;
+               theDistance = set_value<ty>(val / (3 * 1760));
                }
             else if constexpr (other_kind == MyDistanceKind::inchs) {
-               flDistance = val * 0.000015783;
+               theDistance = set_value<ty>(val / (12 * 3 * 1760));
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -165,19 +169,19 @@ public:
             }
          else if constexpr (kind == MyDistanceKind::yards) {
             if constexpr (other_kind == MyDistanceKind::meter) {
-               flDistance = val * 1.09361;
+               theDistance = set_value<ty>(val * 1.09361);
                }
             else if constexpr (other_kind == MyDistanceKind::kilometer) {
-               flDistance = val * 1093.61;
+               theDistance = set_value<ty>(val * 1093.61);
                }
             else if constexpr (other_kind == MyDistanceKind::miles) {
-               flDistance = val * 1760.0;
+               theDistance = set_value<ty>(val * 1760);
                }
             else if constexpr (other_kind == MyDistanceKind::foot) {
-               flDistance = val * 0.333333;
+               theDistance = set_value<ty>(val / 3);
                }
             else if constexpr (other_kind == MyDistanceKind::inchs) {
-               flDistance = val * 0.0277778;
+               theDistance = set_value<ty>(val / (12 * 3));
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -185,19 +189,19 @@ public:
             }
          else if constexpr (kind == MyDistanceKind::foot) {
             if constexpr (other_kind == MyDistanceKind::meter) {
-               flDistance = val * 3.28084;
+               theDistance = set_value<ty>(val * 3.28084);
                }
             else if constexpr (other_kind == MyDistanceKind::kilometer) {
-               flDistance = val * 3280.84;
+               theDistance = set_value<ty>(val * 3280.84);
                }
             else if constexpr (other_kind == MyDistanceKind::miles) {
-               flDistance = val * 5280.0;
+               theDistance = set_value<ty>(val * (3 * 1760));
                }
             else if constexpr (other_kind == MyDistanceKind::yards) {
-               flDistance = val * 3.0;
+               theDistance = set_value<ty>(val * 3);
                }
             else if constexpr (other_kind == MyDistanceKind::inchs) {
-               flDistance = val * 0.0833333;
+               theDistance = set_value<ty>(val / 12);
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -205,19 +209,19 @@ public:
             }
          else if constexpr (kind == MyDistanceKind::inchs) {
             if constexpr (other_kind == MyDistanceKind::meter) {
-               flDistance = val * 39.3701;
+               theDistance = set_value<ty>(val * 39.3701);
                }
             else if constexpr (other_kind == MyDistanceKind::kilometer) {
-               flDistance = val * 39370.1;
+               theDistance = set_value<ty>(val * 39370.1);
                }
             else if constexpr (other_kind == MyDistanceKind::miles) {
-               flDistance = val * 63360.0;
+               theDistance = set_value<ty>(val * (12 * 3 * 1760));
                }
             else if constexpr (other_kind == MyDistanceKind::yards) {
-               flDistance = val * 36.0;
+               theDistance = set_value<ty>(val * (12 * 3));
                }
             else if constexpr (other_kind == MyDistanceKind::foot) {
-               flDistance = val * 12.0;
+               theDistance = set_value<ty>(val * 12);
                }
             else {
                static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -229,10 +233,11 @@ public:
          }
       }
 
-      template <MyDistanceKind other_kind>
-      ty constexpr convert_to() const {
+
+      template <MyDistanceKind other_kind, my_param_distance ret_ty = ty>
+      ret_ty constexpr convert_to() const {
          if constexpr (kind == other_kind) {
-            return flDistance;
+            return set_value<ret_ty>(theDistance);
             }
          else if constexpr (kind == MyDistanceKind::without || other_kind == MyDistanceKind::without) {
             static_assert(always_false_distance<kind>, "a distance without unit can't be converted to or from a distance with unit");
@@ -240,19 +245,19 @@ public:
          else {
             if constexpr (kind == MyDistanceKind::meter) {
                if constexpr (other_kind == MyDistanceKind::kilometer) {
-                  return flDistance / 1000.0;
+                  return set_value<ret_ty>(theDistance / 1000);
                   }
                else if constexpr (other_kind == MyDistanceKind::miles) {
-                  return flDistance / 1609.34;
+                  return set_value<ret_ty>(theDistance / 1609.34);
                   }
                else if constexpr (other_kind == MyDistanceKind::yards) {
-                  return flDistance / 0.9144;
+                  return set_value<ret_ty>(theDistance / 0.9144);
                   }
                else if constexpr (other_kind == MyDistanceKind::foot) {
-                  return flDistance / 0.3048;
+                  return set_value<ret_ty>(theDistance / 0.3048);
                   }
                else if constexpr (other_kind == MyDistanceKind::inchs) {
-                  return flDistance / 0.0254;
+                  return set_value<ret_ty>(theDistance / 0.0254);
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -260,19 +265,19 @@ public:
                }
             else if constexpr (kind == MyDistanceKind::kilometer) {
                if constexpr (other_kind == MyDistanceKind::meter) {
-                  return flDistance * 1000.0;
+                  return set_value<ret_ty>(theDistance * 1000);
                   }
                else if constexpr (other_kind == MyDistanceKind::miles) {
-                  return flDistance * 1.60934;
+                  return set_value<ret_ty>(theDistance * 1.60934);
                   }
                else if constexpr (other_kind == MyDistanceKind::yards) {
-                  return flDistance * 1093.61;
+                  return set_value<ret_ty>(theDistance * 1093.61);
                   }
                else if constexpr (other_kind == MyDistanceKind::foot) {
-                  return flDistance * 3280.84;
+                  return set_value<ret_ty>(theDistance * 3280.84);
                   }
                else if constexpr (other_kind == MyDistanceKind::inchs) {
-                  return flDistance * 39370.1;
+                  return set_value<ret_ty>(theDistance * 39370.1);
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -280,19 +285,19 @@ public:
                }
             else if constexpr (kind == MyDistanceKind::miles) {
                if constexpr (other_kind == MyDistanceKind::meter) {
-                  return flDistance * 1609.34;
+                  return set_value<ret_ty>(theDistance * 1609.34);
                   }
                else if constexpr (other_kind == MyDistanceKind::kilometer) {
-                  return flDistance * 1.60934;
+                  return set_value<ret_ty>(theDistance * 1.60934);
                   }
                else if constexpr (other_kind == MyDistanceKind::yards) {
-                  return flDistance * 1760.0;
+                  return set_value<ret_ty>(theDistance * 1760);
                   }
                else if constexpr (other_kind == MyDistanceKind::foot) {
-                  return flDistance * 5280.0;
+                  return set_value<ret_ty>(theDistance * (3 * 1760));
                   }
                else if constexpr (other_kind == MyDistanceKind::inchs) {
-                  return flDistance * 63360.0;
+                  return set_value<ret_ty>(theDistance * (12 * 3 * 1760));
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -300,19 +305,19 @@ public:
                }
             else if constexpr (kind == MyDistanceKind::yards) {
                if constexpr (other_kind == MyDistanceKind::meter) {
-                  return flDistance * 0.9144;
+                  return set_value<ret_ty>(theDistance * 0.9144);
                   }
                else if constexpr (other_kind == MyDistanceKind::kilometer) {
-                  return flDistance * 0.0009144;
+                  return set_value<ret_ty>(theDistance * 0.0009144);
                   }
                else if constexpr (other_kind == MyDistanceKind::miles) {
-                  return flDistance * 0.000568182;
+                  return set_value<ret_ty>(theDistance / 1760);
                   }
                else if constexpr (other_kind == MyDistanceKind::foot) {
-                  return flDistance * 3.0;
+                  return set_value<ret_ty>(theDistance * 3);
                   }
                else if constexpr (other_kind == MyDistanceKind::inchs) {
-                  return flDistance * 36.0;
+                  return set_value<ret_ty>(theDistance * (3 * 12));
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -320,19 +325,19 @@ public:
                }
             else if constexpr (kind == MyDistanceKind::foot) {
                if constexpr (other_kind == MyDistanceKind::meter) {
-                  return flDistance * 0.3048;
+                  return set_value<ret_ty>(theDistance * 0.3048);
                   }
                else if constexpr (other_kind == MyDistanceKind::kilometer) {
-                  return flDistance * 0.0003048;
+                  return set_value<ret_ty>(theDistance * 0.0003048);
                   }
                else if constexpr (other_kind == MyDistanceKind::miles) {
-                  return flDistance * 0.000189394;
+                  return set_value<ret_ty>(theDistance / (3 * 1760));
                   }
                else if constexpr (other_kind == MyDistanceKind::yards) {
-                  return flDistance * 0.333333;
+                  return set_value<ret_ty>(theDistance / 3);
                   }
                else if constexpr (other_kind == MyDistanceKind::inchs) {
-                  return flDistance * 12.0;
+                  return set_value<ret_ty>(theDistance * 12);
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -340,19 +345,19 @@ public:
                }
             else if constexpr (kind == MyDistanceKind::inchs) {
                if constexpr (other_kind == MyDistanceKind::meter) {
-                  return flDistance * 0.0254;
+                  return set_value<ret_ty>(theDistance * 0.0254);
                   }
                else if constexpr (other_kind == MyDistanceKind::kilometer) {
-                  return flDistance * 0.0000254;
+                  return set_value<ret_ty>(theDistance * 0.0000254);
                   }
                else if constexpr (other_kind == MyDistanceKind::miles) {
-                  return flDistance * 0.000015783;
+                  return set_value<ret_ty>(theDistance / (12 * 3 * 1760));
                   }
                else if constexpr (other_kind == MyDistanceKind::yards) {
-                  return flDistance * 0.0277778;
+                  return set_value<ret_ty>(theDistance / (12 * 3));
                   }
                else if constexpr (other_kind == MyDistanceKind::foot) {
-                  return flDistance * 0.0833333;
+                  return set_value<ret_ty>(theDistance / 12);
                   }
                else {
                   static_assert(always_false_distance<other_kind>, "unexpected unit for distance");
@@ -366,7 +371,21 @@ public:
       }
 
    private:
-      ty flDistance;
+      /// method to convert different types with rules
+      template <my_param_distance ret_ty, typename other_ty>
+      auto set_value(other_ty&& val) const -> std::conditional_t<std::is_same_v<other_ty, ret_ty>, ret_ty&&, ret_ty>  {
+         if constexpr (std::is_integral_v<ret_ty> && !std::is_integral_v<other_ty>) {
+            return static_cast<ret_ty>(std::round(val));
+            }
+         else if constexpr (!std::is_same_v<ret_ty, other_ty>) {
+            return static_cast<ret_ty>(val);
+            }
+         else {
+            return std::move(val);
+            }
+         }
+
+      ty theDistance;
    };
 
 MyDistance<double, MyDistanceKind::meter> operator""_meter(long double val) {

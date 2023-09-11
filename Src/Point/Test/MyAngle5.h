@@ -27,9 +27,6 @@ class MyAngle {
                   (std::is_integral_v<OtherTy> && !std::is_same_v<OtherTy, bool>)
       MyAngle(OtherTy const& val) : flAngle(static_cast<ty>(val)) {}
 
-      //MyAngle(ty const& val) : flAngle(val) { }
-      //MyAngle(MyAngle<ty, kind> const& other) : flAngle(other.flAngle()) {}
-
       template <MyAngleKind other_kind, std::floating_point OtherTy = ty>
       MyAngle(MyAngle<OtherTy, other_kind> const& other) {
          if constexpr (other_kind == kind) {
@@ -116,13 +113,11 @@ class MyAngle {
       }
    };
 
-MyAngle<double> operator""_deg(long double val) {
-   return MyAngle<double>(static_cast<double>(val));
+MyAngle<double, MyAngleKind::degree> operator""_deg(long double val) {
+   return MyAngle<double, MyAngleKind::degree>(static_cast<double>(val));
    }
 
-MyAngle<double> operator""_rad(long double val) {
-   MyAngle<double> tmp;
-   tmp.convert_from<MyAngleKind::radian>(static_cast<double>(val));
-   return tmp;
+MyAngle<double, MyAngleKind::radian> operator""_rad(long double val) {
+   return MyAngle<double, MyAngleKind::radian>(static_cast<double>(val));
    }
 

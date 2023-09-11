@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MyAngle5.h"
+#include "MyDistance5.h"
 
 #include <iostream>
 #include <sstream>
@@ -27,24 +28,33 @@ class MyPoint : public std::pair<ty, ty> {
       }
 
    friend MyPoint<ty> operator + (MyPoint<ty> const& a, MyPoint<ty> const& b) {
-      return MyPoint<ty>(a.first + b.first, a.second + b.second);
+      return MyPoint<ty>(a) += b;
       }
 
    friend MyPoint<ty> operator + (MyPoint const& a, ty const& b) {
-      return MyPoint<ty>(a.first + b, a.second);
+      return MyPoint<ty>(a) += b;
       }
 
    friend MyPoint<ty> operator - (MyPoint<ty> const& a, MyPoint<ty> const& b) {
       return MyPoint<ty>(a.first - b.first, a.second - b.second);
       }
 
-   friend MyPoint<ty> operator - (MyPoint<ty> const& a, double const& b) {
+   friend MyPoint<ty> operator - (MyPoint<ty> const& a, ty const& b) {
       return MyPoint<ty>(a.first - b, a.second);
       }
 
+   friend MyPoint<ty> operator * (MyPoint const& a, ty const& b) {
+      return MyPoint<ty>(a.first * b, a.second * b);
+      }
+
+   friend MyPoint<ty> operator / (MyPoint const& a, ty const& b) {
+      return MyPoint<ty>(a.first / b, a.second / b);
+      }
+
+
 public:
-   constexpr MyPoint(void) : MyPoint<ty>(0.0, 0.0) { }
-   constexpr MyPoint(ty const& x, ty const& y = 0.0) : std::pair<ty, ty>(x, y) { }
+   constexpr MyPoint(void) : MyPoint<ty>(ty(), ty()) { }
+   constexpr MyPoint(ty const& x, ty const& y = ty()) : std::pair<ty, ty>(x, y) { }
    constexpr MyPoint(ty const& distance, MyAngle<ty> const& angle) : MyPoint<ty>() { 
       DistanceAndAngle(distance, angle); 
       }
@@ -60,28 +70,41 @@ public:
 
    MyPoint& operator = (MyPoint const&) = default;
    MyPoint& operator = (MyPoint&&) noexcept = default;
+   virtual ~MyPoint() = default;
 
    MyPoint& operator += (MyPoint const& other) {
       this->first += other.first;
       this->second += other.second;
       return *this;
-   }
+      }
 
    MyPoint& operator += (ty const& other) {
       this->first += other;
       return *this;
-   }
+      }
 
    MyPoint& operator -= (MyPoint const& other) {
       this->first -= other.first;
       this->second -= other.second;
       return *this;
-   }
+      }
 
    MyPoint& operator -= (ty const& other) {
       this->first -= other;
       return *this;
-   }
+      }
+
+   MyPoint& operator *= (ty const& other) {
+      this->first  *= other;
+      this->second *= other;
+      return *this;
+      }
+
+   MyPoint& operator /= (ty const& other) {
+      this->first  /= other;
+      this->second /= other;
+      return *this;
+      }
 
    operator std::string() const { return std::format("({}, {})", this->first, this->second); }
 
