@@ -18,7 +18,7 @@ inline constexpr bool always_false_distance = false;
 template <typename ty>
 concept my_param_distance = std::is_floating_point_v<ty> || (std::is_integral_v<ty> && !std::is_same_v<ty, bool>);
 
-template <std::floating_point ty = double, MyDistanceKind kind = MyDistanceKind::without>
+template <my_param_distance ty = double, MyDistanceKind kind = MyDistanceKind::without>
 class MyDistance {
    friend std::ostream& operator << (std::ostream& out, MyDistance<ty, kind> const& dist) {
       return out << dist.Distance() << " " << dist.unit();

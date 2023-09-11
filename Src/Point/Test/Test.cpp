@@ -73,7 +73,7 @@ class MySexagesimalAngle : public std::tuple<ty, ty, ty>  {
       void Seconds(ty const& val) { std::get<2>(*this) = val; }
 
       template <std::floating_point param_ty = double>
-      void DegreesAsDecimal(param_ty const& val) const {
+      void DegreesAsDecimal(param_ty const& val)  {
          param_ty tmp { val };
          Degrees(std::floor(tmp));
          tmp -= Degrees();
@@ -87,7 +87,8 @@ class MySexagesimalAngle : public std::tuple<ty, ty, ty>  {
          static auto constexpr special_char = [](char c) { return c == '°' || c == '"' || c == '\''; };
 
          std::string input { para };
-         std::replace_if(input.begin(), input.end(), special_char, ' ');
+         //std::replace_if(input.begin(), input.end(), special_char, ' ');
+         std::ranges::replace_if(input, special_char, ' ');
          
          *this = { 0, 0, 0 };
          switch (auto ret = std::string_view{ input.begin(), input.end() } 
@@ -166,7 +167,7 @@ class MyETRS89 : std::tuple<char, int, ty, ty> {
 template <std::floating_point ty>
 class MyMercatorETRS89 : public MyPoint<ty> {// std::pair<ty, ty> {
    public:
-      MyMercatorETRS89(void) = default;
+      constexpr MyMercatorETRS89(void) = default;
       MyMercatorETRS89(MyMercatorETRS89 const&) = default;
       MyMercatorETRS89(MyMercatorETRS89&&) noexcept = default;
       MyMercatorETRS89(ty const& x, ty const& y) : MyPoint<ty>(x, y) { } //std::pair<ty, ty>(x, y) { }
@@ -176,7 +177,7 @@ class MyMercatorETRS89 : public MyPoint<ty> {// std::pair<ty, ty> {
       MyMercatorETRS89& operator = (MyMercatorETRS89 const&) = default;
       MyMercatorETRS89& operator = (MyMercatorETRS89&&) noexcept = default;
 
-      //auto operator <=> (MyMercatorETRS89 const&) const = default;
+      auto operator <=> (MyMercatorETRS89 const&) const = default;
 
    };
 
@@ -300,13 +301,18 @@ int main() {
    MyAngle<double, MyAngleKind::degree> y(xx.DegreesAsDecimal());
    MyAngle<double, MyAngleKind::degree> x = 0.250_rad;
    std::cout << x << " = " << x.toRadians() << "rad" << "\n";
-   //*
+
+   MyAngle<double, MyAngleKind::radian> comp_x = x;
+   //bool test = (x == static_cast<MyAngle<double, MyAngleKind::degree>>(comp_x));
+   bool test = (x == comp_x);
+   test = (x == x);
+
    //MyDistance<double, MyDistanceKind::meter> testX(1000);
    auto testMeter = 1000._meter;
    MyDistance<double, MyDistanceKind::yards> testYard;
    testYard = testMeter;
    
-   bool test = (testMeter == testYard);
+   test = (testMeter == testYard);
 
    std::cout << testYard << (test ? " = " : " <> ") << testMeter << "\nSize of the Yard elements is: " << sizeof(testYard) << "\n";
 
@@ -343,5 +349,4 @@ int main() {
              << pkt2 << "\n"
              << pkt4 << " -> " << pkt4.Distance() << " / " << pkt4.Angle() << "\n"
              << pkt1.distance(pkt2) << " - " << pkt1.angle(pkt2) << "\n";
-   //*/
    }

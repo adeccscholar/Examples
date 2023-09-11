@@ -54,6 +54,16 @@ class MyAngle {
 
       auto operator <=> (MyAngle const&) const = default;
 
+      
+      template <MyAngleKind other_kind, std::floating_point OtherTy = ty>
+      auto operator == (MyAngle<OtherTy, other_kind> const& ref) const 
+         -> std::enable_if_t<(other_kind != kind || !std::is_same_v<OtherTy, ty>), bool> // std::strong_ordering
+         {
+         MyAngle<ty, kind> comp_val(ref) ;
+         return *this == comp_val;
+         }
+       
+
       ty& operator () (void) { return flAngle; }
       ty const& operator () (void) const { return flAngle; }
 
@@ -65,6 +75,13 @@ class MyAngle {
          else if constexpr (kind == MyAngleKind::radian) return std::format("{} rad", flAngle);
          else static_assert(always_false_angle<kind>, "invalid kind of angle");
          }
+
+      /*
+      template <MyAngleKind other_kind, std::floating_point OtherTy = ty>
+      operator MyAngle<OtherTy, other_kind>(void) const {
+         return MyAngle<OtherTy, other_kind>(*this);
+         }
+      */
 
       ty const& Angle(void) const { return flAngle; }
 
